@@ -1,0 +1,71 @@
+﻿@page "/AdminConfig"
+
+@inject HttpClient http
+
+<h3>AdminConfig</h3>
+<small>Agregar Nueva Configuración.</small>
+<div class="form-group">
+    <a class="btn btn-success" href="AdminConfig/CreateConfig"><i class="oi oi-plus"></i> Crear Nuevo</a>
+</div>
+<br>
+
+@if (itemsConfig == null)
+{
+<label>Cargando...</label> }
+else if (itemsConfig.Length == 0)
+{
+<label>No tengo item config creados</label>
+}
+else
+{
+<table class="table">
+    <thead>
+        <tr>
+            <th>CÓDIGO</th>
+            <th>DESCRIPCION</th>
+            <th>PICTURE</th>
+            <th>ACCIONES</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var dr in itemsConfig)
+        {
+<tr>
+    <td>@dr.ItemCode</td>
+    <td>@dr.Description</td>
+    <td>
+        @{string format = "image/jpeg"; string imageDataUri = $"data:{format};base64,{Convert.ToBase64String(dr.picture)}";}
+        <img src="@imageDataUri" style="width:50px;height:50px;" />
+    </td>
+    <td>
+        <a href='/AdminConfig/EditConfig/@dr.ItemCode'>Editar</a>  |
+        <a href='/AdminConfig/DeleteConfig/@dr.ItemCode'>Eliminar</a>
+    </td>
+</tr>
+            }
+    </tbody>
+</table>}
+
+@code { [Parameter]
+        public int companyid { get; set; }
+
+
+        ItemConfig[] itemsConfig { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        companyid = 1;
+        await cargarItemsConfig();
+
+    }
+
+    async Task cargarItemsConfig()
+    {
+        var response = await http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/ItemConfig/get?company=" + this.companyid);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+            itemsConfig = JsonConvert.DeserializeObject<ItemConfig[]>(result.result.ToString());
+        }
+    }
+}

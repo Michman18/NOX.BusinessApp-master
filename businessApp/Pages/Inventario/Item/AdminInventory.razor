@@ -1,0 +1,67 @@
+﻿@page "/admininventory"
+
+@inject HttpClient http
+
+<h3>AdminInventory</h3>
+<small>Agregar Nuevos Productos.</small>
+<div class="form-group">
+    <a class="btn btn-success" href="admininventory/CreateNewProduct"><i class="oi oi-plus"></i> Crear Nuevo</a>
+</div>
+<br>
+
+@if (items == null)
+{
+<label>Cargando...</label> }
+else if (items.Length == 0)
+{
+<label>No tengo productos creados</label> 
+}
+else
+{
+<table class="table">
+    <thead>
+        <tr>
+            <th>CÓDIGO</th>
+            <th>NOMBRE</th>
+            <th>PRECIO</th>
+            <th>ACCIONES</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var dr in items)
+        {
+        <tr>
+            <td>@dr.ItemCode</td>
+            <td>@dr.ItemDescription</td>
+            <td>@dr.SalePrice</td>
+            <td>            
+                <a href='/admininventory/EditProduct/@dr.ItemCode'>Editar</a>  |
+                <a href='/admininventory/DeleteProduct/@dr.ItemCode'>Eliminar</a>            
+            </td>
+        </tr>}
+    </tbody>
+</table>
+}
+
+@code { [Parameter]
+            public int companyid { get; set; }
+
+            Item[] items { get; set; }
+
+            protected override async Task OnInitializedAsync()
+            {
+                companyid = 1;
+                await cargarItems();
+
+            }
+
+            async Task cargarItems()
+            {
+                var response = await http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/Item/get?companyid=" + this.companyid);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+                    items = JsonConvert.DeserializeObject<Item[]>(result.result.ToString());
+                }
+            } 
+    }

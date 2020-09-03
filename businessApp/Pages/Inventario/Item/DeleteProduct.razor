@@ -1,0 +1,61 @@
+﻿@page "/admininventory/DeleteProduct/{itemCode}"
+@inject HttpClient Http
+@inject NavigationManager UriHelper
+
+<h3>Delete Product</h3>
+
+<h4>Are you sure you want to delete product with code : @itemCode?</h4>
+<br />
+<div class="col-md-4">
+    <table class="table">
+        <tr>
+            <td>Code</td>
+            <td>@prod.ItemCode</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>@prod.ItemDescription</td>
+        </tr>
+        <tr>
+            <td>Sale Price</td>
+            <td>@prod.SalePrice</td>
+        </tr>
+      
+    </table>
+    <div class="form-group">
+        
+        <button type="button" class="btn btn-primary" @onclick="@(async () => await Delete())">Delete</button>
+        <input type="button" value="Cancel" @onclick="@cancel" class="btn btn-secondary" />
+    </div>
+</div>
+@code {
+    [Parameter]
+    public string itemCode { get; set; }
+    public Item prod = new Item();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await cargarItem();
+    }
+
+    async Task cargarItem()
+    {
+        var response = await Http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/Item/getbycode?companyid=1&itemcode=" + this.itemCode);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+            prod = JsonConvert.DeserializeObject<Item>(result.result.ToString());
+        }
+    }
+
+    async Task Delete()
+    {
+        await Http.DeleteAsync(businessApp.Data.AppSettings.AddressItemService + "/api/Item/delete?companyid=1&itemcode=" + this.itemCode);
+        UriHelper.NavigateTo("/admininventory");
+    }
+
+    void cancel()
+    {
+        UriHelper.NavigateTo("/admininventory");
+    }
+}

@@ -1,0 +1,60 @@
+﻿@page "/admininventory/EditProduct/{itemCode}"
+@inject HttpClient Http
+@inject NavigationManager UriHelper
+
+<h3>Editar Producto</h3>
+<div class="row">
+<div class="col-md-4">
+    <form>
+        <div class="form-group">
+            <label for="ItemCode" class="control-label">Code</label>
+            <input for="ItemCode" class="form-control" @bind="@prod.ItemCode" />
+        </div>
+
+        <div class="form-group">
+            <label asp-for="ItemDescription" class="control-label">Description</label>
+            <input asp-for="ItemDescription" class="form-control" @bind="@prod.ItemDescription" />
+        </div>
+        <div class="form-group">
+            <label asp-for="SalePrice" class="control-label">Sale Price</label>
+            <input asp-for="SalePrice" class="form-control" @bind="@prod.SalePrice" />
+        </div>
+        <div class="form-group">
+            <button type="button" class="btn btn-primary" @onclick="@(async () => await editProduct())">Save</button>
+            <input type="button" value="Cancel" @onclick="@cancel" class="btn btn-secondary" />
+        </div>
+    </form>
+</div>
+</div>
+@code {
+    [Parameter]
+    public string itemCode { get; set; }
+    public Item prod = new Item();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await cargarItem();
+    }
+
+    async Task cargarItem()
+    {
+        var response = await Http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/Item/getbycode?companyid=1&itemcode=" + this.itemCode);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+            prod = JsonConvert.DeserializeObject<Item>(result.result.ToString());
+        }
+    }
+
+    async Task editProduct()
+    {
+        await Http.PutAsJsonAsync(businessApp.Data.AppSettings.AddressItemService + "/api/Item/put?companyid=1&itemcode="+ this.itemCode + "&body=" + JsonConvert.SerializeObject(prod), prod);
+        UriHelper.NavigateTo("/admininventory");
+    }
+
+    void cancel()
+    {
+        UriHelper.NavigateTo("/admininventory");
+    }
+
+}

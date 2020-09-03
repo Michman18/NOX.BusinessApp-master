@@ -1,0 +1,90 @@
+﻿@page "/adminConfig/EditConfig/{itemCode}"
+@inject HttpClient Http
+@inject NavigationManager UriHelper
+
+<h3>Edit Config</h3>
+<div class="row">
+    <div class="col-md-4">
+        <form>
+            <div class="form-group">
+                <label for="ItemCode" class="control-label">Code</label>
+                <input for="ItemCode" class="form-control" @bind="@prod.ItemCode" />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ItemDescription" class="control-label">Description</label>
+                <input asp-for="ItemDescription" class="form-control" @bind="@prod.Description" />
+            </div>
+            <div class="form-group">
+
+                <InputFile OnChange="HandleSelection" />
+                <p>@status</p>
+                @if (!string.IsNullOrEmpty(imageDataUri))
+                {
+                    <img src="@imageDataUri" />
+                }
+            </div>
+            <div class="form-group">
+                <button type="button" class="btn btn-primary" @onclick="@(async () => await editConfig())">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+@code {
+    [Parameter]
+    public string itemCode { get; set; }
+    string status;
+    public ItemConfig prod = new ItemConfig();
+    string imageDataUri;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await cargarItem();
+    }
+
+    async Task cargarItem()
+    {
+        var response = await Http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/ItemConfig/getbycode?company=1&itemcode=" + this.itemCode);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+            prod = JsonConvert.DeserializeObject<ItemConfig>(result.result.ToString());
+            var format = "image/jpeg";
+            imageDataUri = $"data:{format};base64,{Convert.ToBase64String(prod.picture)}";
+        }
+    }
+
+    async Task HandleSelection(BlazorInputFile.IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            var rawFile = files.FirstOrDefault();
+            if (rawFile != null)
+            {
+                // Load as an image file in memory
+                var format = "image/jpeg";
+                var imageFile = await rawFile.ToImageFileAsync(format, 640, 480);
+                var ms = new MemoryStream();
+                await imageFile.Data.CopyToAsync(ms);
+
+                // Make a data URL so we can display it
+                imageDataUri = $"data:{format};base64,{Convert.ToBase64String(ms.ToArray())}";
+
+                prod.picture = ms.ToArray();
+
+                status = $"Carga Completa {ms.Length} bytes del archivo {imageFile.Name}";
+            }
+        }
+    }
+    async Task editConfig()
+    {
+        await Http.PutAsJsonAsync(businessApp.Data.AppSettings.AddressItemService + "/api/ItemConfig/put?companyid=1&itemcode=" + this.itemCode, prod);
+        UriHelper.NavigateTo("/adminConfig");
+    }
+
+    void cancel()
+    {
+        UriHelper.NavigateTo("/adminConfig");
+    }
+}

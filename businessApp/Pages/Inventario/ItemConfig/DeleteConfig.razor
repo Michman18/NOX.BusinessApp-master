@@ -1,0 +1,64 @@
+﻿@page "/adminConfig/DeleteConfig/{itemCode}"
+@inject HttpClient Http
+@inject NavigationManager UriHelper
+
+<h3>DeleteConfig</h3>
+
+<h4>Are you sure you want to delete iten Code with code : @itemCode?</h4>
+<br />
+<div class="col-md-4">
+    <table class="table">
+        <tr>
+            <td>Code</td>
+            <td>@prod.ItemCode</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>@prod.Description</td>
+        </tr>
+        <tr>
+            <td>Picture</td>
+            <td><img src="@imageDataUri" /></td>
+        </tr>
+
+    </table>
+    <div class="form-group">
+
+        <button type="button" class="btn btn-primary" @onclick="@(async () => await Delete())">Delete</button>
+        <input type="button" value="Cancel" @onclick="@cancel" class="btn btn-secondary" />
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string itemCode { get; set; }
+    public ItemConfig prod = new ItemConfig();
+    string imageDataUri;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await cargarItem();
+    }
+
+    async Task cargarItem()
+    {
+        var response = await Http.GetAsync(businessApp.Data.AppSettings.AddressItemService + "/api/ItemConfig/getbycode?company=1&itemcode=" + this.itemCode);
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<ResponseBase>(response.Content.ReadAsStringAsync().Result);
+            prod = JsonConvert.DeserializeObject<ItemConfig>(result.result.ToString());
+            var format = "image/jpeg";
+            imageDataUri = $"data:{format};base64,{Convert.ToBase64String(prod.picture)}";
+        }
+    }
+    async Task Delete()
+    {
+        await Http.DeleteAsync(businessApp.Data.AppSettings.AddressItemService + "/api/ItemConfig/delete?companyid=1&itemcode=" + this.itemCode);
+        UriHelper.NavigateTo("/AdminConfig");
+    }
+
+    void cancel()
+    {
+        UriHelper.NavigateTo("/AdminConfig");
+    }
+}
